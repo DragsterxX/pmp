@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestión de Proyectos</title>
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,400&family=Karla:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Frappe Gantt CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/frappe-gantt@0.6.1/dist/frappe-gantt.css">
+
+    <!-- Estilos propios -->
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <!-- Pantalla de carga -->
+    <div id="loadingScreen" class="loading-screen">
+        <div class="loading-content">
+            <div class="loading-mark">G</div>
+            <p>Preparando todo</p>
+            <div class="loading-bar"><div class="loading-bar-fill"></div></div>
+        </div>
+    </div>
+
+    <div class="app-container">
+        <!-- Header -->
+        <header class="app-header">
+            <div class="header-left">
+                <div class="brand">
+                    <img src="logo.jpg" alt="Logo" class="brand-logo" />
+                    <div>
+                        <h1>Gestión de Proyectos</h1>
+                        <p class="brand-tagline">Seguimiento y control de actividades</p>
+                    </div>
+                </div>
+            </div>
+            <div class="header-right">
+                <div class="db-status" id="dbIndicator">
+                    <span class="db-dot"></span>
+                    SQLite
+                </div>
+                <div class="header-divider"></div>
+                <button class="header-action" onclick="exportarReportePDF()" title="Exportar reporte PDF">
+                    Reporte PDF
+                </button>
+                <button class="header-action" onclick="exportarBaseDatos()" title="Exportar base de datos">
+                    Exportar
+                </button>
+                <button class="header-action" onclick="document.getElementById('importDbInput').click()" title="Importar base de datos">
+                    Importar
+                </button>
+                <input type="file" id="importDbInput" accept=".db,.sqlite,.sqlite3" style="display: none;" onchange="importarBaseDatos(event)">
+                <button class="header-action header-action--subtle" onclick="resetearBaseDatos()" title="Restaurar datos de ejemplo">
+                    Resetear
+                </button>
+            </div>
+        </header>
+
+        <!-- Navegación principal -->
+        <nav class="main-nav">
+            <button class="nav-item active" onclick="switchMainTab('projects')">
+                Proyectos
+            </button>
+            <button class="nav-item" onclick="switchMainTab('dashboard')">
+                Dashboard
+            </button>
+        </nav>
+
+        <!-- Contenido: Módulo Proyectos -->
+        <div id="projects-module" class="main-content active">
+            <div class="projects-layout">
+                <!-- Sidebar -->
+                <aside class="projects-sidebar">
+                    <div class="sidebar-header">
+                        <span class="sidebar-title">Mis proyectos</span>
+                        <div class="sidebar-header-actions">
+                            <button class="btn-add" onclick="openProjectModal()" title="Nuevo proyecto">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                            </button>
+                            <button class="btn-sidebar-toggle" onclick="toggleSidebar()" title="Colapsar/expandir sidebar">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="projects-list" id="projectsList"></div>
+                </aside>
+
+                <!-- Panel de detalle -->
+                <main class="project-detail-panel">
+                    <div id="emptyProjectState" class="empty-state">
+                        <div class="empty-state-icon">
+                            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+                        </div>
+                        <h2>Selecciona un proyecto</h2>
+                        <p>Elige de la lista o crea uno nuevo para comenzar</p>
+                    </div>
+
+                    <div id="projectDetail" style="display: none;">
+                        <!-- Header del proyecto (colapsable) -->
+                        <div class="detail-header">
+                            <div class="detail-header-top">
+                                <div class="detail-header-title-row">
+                                    <button class="section-toggle-btn" onclick="toggleSection('header')" title="Colapsar/expandir header">
+                                        <svg id="section-chevron-header" class="section-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+                                    </button>
+                                    <div>
+                                        <h2 id="detailProjectName" class="detail-title"></h2>
+                                        <span id="detailProjectResponsible" class="detail-subtitle"></span>
+                                    </div>
+                                </div>
+                                <div class="detail-actions">
+                                    <button class="btn btn--outline" onclick="editCurrentProject()">Editar</button>
+                                    <button class="btn btn--ghost-danger" onclick="deleteCurrentProject()">Eliminar</button>
+                                </div>
+                            </div>
+
+                            <!-- Sección colapsable del header -->
+                            <div id="section-body-header">
+                                <div class="detail-meta-compact">
+                                    <div class="meta-item">
+                                        <span class="meta-label">Inicio</span>
+                                        <span class="meta-value" id="detailProjectStartDate"></span>
+                                    </div>
+                                    <div class="meta-separator"></div>
+                                    <div class="meta-item">
+                                        <span class="meta-label">Fin</span>
+                                        <span class="meta-value" id="detailProjectEndDate"></span>
+                                    </div>
+                                    <div class="meta-separator"></div>
+                                    <div class="meta-item">
+                                        <span class="meta-label">Estado</span>
+                                        <span class="meta-value" id="detailProjectStatus"></span>
+                                    </div>
+                                    <div class="meta-separator"></div>
+                                    <div class="meta-item">
+                                        <span class="meta-label">Cumplimiento</span>
+                                        <span class="meta-value meta-value--accent" id="detailProjectProgress">0%</span>
+                                    </div>
+                                </div>
+                                <div class="progress-track">
+                                    <div class="progress-fill" id="detailProjectProgressBar" style="width: 0%"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Sección Actividades -->
+                        <div class="detail-section">
+                            <div class="detail-section-header">
+                                <button class="section-toggle-btn" onclick="toggleSection('activities')" title="Colapsar/expandir actividades">
+                                    <svg id="section-chevron-activities" class="section-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+                                </button>
+                                <div>
+                                    <h3 class="detail-section-title">Actividades</h3>
+                                    <p class="detail-section-subtitle">Gestión de tareas del proyecto</p>
+                                </div>
+                                <div class="detail-section-actions">
+                                    <button class="btn btn--accent btn--sm" onclick="openMassiveCopyModal()" title="Copiar actividades seleccionadas" id="copySelectedBtn" style="display:none;">
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                                            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                                        </svg>
+                                        Copiar seleccionadas
+                                    </button>
+                                    <button class="btn btn--primary btn--sm" onclick="openActivityModal()">
+                                        Nueva actividad
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div id="section-body-activities">
+                                <div class="table-wrapper">
+                                    <table class="activities-table">
+                                        <thead>
+                                            <tr>
+                                                <th style="width: 40px;">
+                                                    <input type="checkbox" id="selectAllActivities" onchange="toggleSelectAll()" />
+                                                </th>
+                                                <th style="width: 30px;"></th>
+                                                <th>Actividad</th>
+                                                <th style="width: 100px;">Tipo</th>
+                                                <th style="width: 110px;">Fecha inicio</th>
+                                                <th style="width: 110px;">Fecha fin</th>
+                                                <th style="width: 100px;">Estado</th>
+                                                <th style="width: 100px;">Avance</th>
+                                                <th style="width: 220px;">Acciones</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="activitiesTableBody"></tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Sección Gantt -->
+                        <div class="detail-section">
+                            <div class="detail-section-header">
+                                <button class="section-toggle-btn" onclick="toggleSection('gantt')" title="Colapsar/expandir gantt">
+                                    <svg id="section-chevron-gantt" class="section-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+                                </button>
+                                <div>
+                                    <h3 class="detail-section-title">Diagrama de Gantt</h3>
+                                    <p class="detail-section-subtitle">Línea de tiempo visual del proyecto</p>
+                                </div>
+                            </div>
+                            <div id="section-body-gantt">
+                                <div id="projectGanttContainer"></div>
+                            </div>
+                        </div>
+                    </div>
+                </main>
+            </div>
+        </div>
+
+        <!-- Dashboard Module -->
+        <div id="dashboard-module" class="main-content">
+            <div class="dashboard-content">
+                <!-- Filtro por macroproyecto -->
+                <div class="dashboard-filter">
+                    <label class="filter-label">Filtrar por macroproyecto:</label>
+                    <select id="dashboardMacroFilter" class="filter-select" onchange="aplicarFiltroDashboard()">
+                        <option value="">Todos</option>
+                    </select>
+                </div>
+
+                <!-- Tarjetas KPI -->
+                <div class="kpi-grid">
+                    <div class="kpi-card">
+                        <div class="kpi-label">Total de proyectos</div>
+                        <div class="kpi-value" id="kpiTotalProyectos">0</div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-label">Proyectos activos</div>
+                        <div class="kpi-value" id="kpiProyectosActivos">0</div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-label">Cumplimiento promedio</div>
+                        <div class="kpi-value" id="kpiCumplimientoPromedio">0%</div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-label">Actividades pendientes</div>
+                        <div class="kpi-value" id="kpiActividadesPendientes">0</div>
+                    </div>
+                </div>
+
+                <!-- Gantt general compacto -->
+                <div class="dashboard-card">
+                    <h2>Vista general de proyectos activos</h2>
+                    <div id="dashboardGanttContainer" class="gantt-container gantt-container--compact"></div>
+                </div>
+
+                <!-- Gráfico de barras horizontales -->
+                <div class="dashboard-card">
+                    <h2>Cumplimiento por proyecto</h2>
+                    <div class="chart-container chart-container--horizontal">
+                        <canvas id="complianceChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Lista de próximas actividades -->
+                <div class="dashboard-card">
+                    <h2>Próximas actividades a vencer</h2>
+                    <div id="upcomingActivitiesContainer"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Macroproyecto -->
+    <div id="macroproyectoModal" class="modal-overlay">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 id="macroproyectoModalTitle">Nuevo Macroproyecto</h3>
+                <button class="modal-close" onclick="closeMacroproyectoModal()">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="macroproyectoForm">
+                    <div class="field">
+                        <label class="field-label">Nombre</label>
+                        <input type="text" id="macroproyectoNombre" class="field-input" placeholder="Ej: Infraestructura 2024" required />
+                    </div>
+                    <div class="field">
+                        <label class="field-label">Descripción</label>
+                        <textarea id="macroproyectoDescripcion" class="field-input" rows="3" placeholder="Descripción opcional" style="resize:vertical;"></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn--ghost" onclick="closeMacroproyectoModal()">Cancelar</button>
+                <button class="btn btn--primary" onclick="saveMacroproyecto()">Guardar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Proyecto -->
+    <div id="projectModal" class="modal-overlay">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 id="projectModalTitle">Nuevo Proyecto</h3>
+                <button class="modal-close" onclick="closeProjectModal()">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="projectForm">
+                    <div class="field">
+                        <label class="field-label">Nombre del proyecto</label>
+                        <input type="text" id="projectName" class="field-input" placeholder="Ej: Renovación de oficinas" required />
+                    </div>
+                    <div class="field">
+                        <label class="field-label">Responsable</label>
+                        <input type="text" id="projectResponsible" class="field-input" placeholder="Nombre del responsable" required />
+                    </div>
+                    <div class="field">
+                        <label class="field-label">Macroproyecto</label>
+                        <select id="projectMacroproyecto" class="field-select"></select>
+                        <span class="field-hint">Opcional: Agrupa el proyecto en un macroproyecto</span>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn--ghost" onclick="closeProjectModal()">Cancelar</button>
+                <button class="btn btn--primary" onclick="saveProject()">Guardar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Actividad -->
+    <div id="activityModal" class="modal-overlay">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 id="activityModalTitle">Nueva Actividad</h3>
+                <button class="modal-close" onclick="closeActivityModal()">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="activityForm">
+                    <div class="field">
+                        <label class="field-label">Nombre de la actividad</label>
+                        <input type="text" id="activityName" class="field-input" placeholder="Ej: Análisis de Requerimientos" required />
+                    </div>
+
+                    <div class="field-row">
+                        <div class="field">
+                            <label class="field-label">Tipo</label>
+                            <select id="activityType" class="field-select" onchange="handleActivityTypeChange()" required>
+                                <option value="continua">Continua</option>
+                                <option value="reunion">Reunión</option>
+                            </select>
+                            <span class="field-hint" id="typeHelp">Duración de varios días</span>
+                        </div>
+                        <div class="field">
+                            <label class="field-label">Estado</label>
+                            <label class="toggle">
+                                <input type="checkbox" id="activityApproved" />
+                                <span class="toggle-track"></span>
+                                <span class="toggle-label" id="toggleLabel">Pendiente</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="field-row">
+                        <div class="field">
+                            <label class="field-label">Fecha inicio</label>
+                            <input type="date" id="activityStartDate" class="field-input" required />
+                        </div>
+                        <div class="field" id="endDateGroup">
+                            <label class="field-label">Fecha fin</label>
+                            <input type="date" id="activityEndDate" class="field-input" required />
+                        </div>
+                    </div>
+
+                    <div class="field">
+                        <label class="field-label">Actividad padre</label>
+                        <select id="activityParent" class="field-select">
+                            <option value="">Ninguna (actividad principal)</option>
+                        </select>
+                        <span class="field-hint">Selecciona si esta es una subactividad</span>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn--ghost" onclick="closeActivityModal()">Cancelar</button>
+                <button class="btn btn--primary" onclick="saveActivity()">Guardar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Copiar Actividad -->
+    <div id="copyActivityModal" class="modal-overlay">
+        <div class="modal">
+            <div class="modal-header">
+                <h3>Copiar Actividad</h3>
+                <button class="modal-close" onclick="closeCopyActivityModal()">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="field">
+                    <label class="field-label">Proyecto destino</label>
+                    <select id="copyDestProject" class="field-select"></select>
+                    <span class="field-hint">La actividad se copiará en este proyecto</span>
+                </div>
+                <div class="field">
+                    <label class="copy-option">
+                        <input type="checkbox" id="copiarHijos" checked />
+                        <span>Incluir subactividades</span>
+                    </label>
+                </div>
+                <div class="field">
+                    <label class="copy-option">
+                        <input type="checkbox" id="copiarComentarios" checked />
+                        <span>Copiar comentarios</span>
+                    </label>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn--ghost" onclick="closeCopyActivityModal()">Cancelar</button>
+                <button class="btn btn--primary" onclick="copyActivity()">Copiar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Copia Masiva -->
+    <div id="massiveCopyModal" class="modal-overlay">
+        <div class="modal">
+            <div class="modal-header">
+                <h3>Copiar Actividades Seleccionadas</h3>
+                <button class="modal-close" onclick="closeMassiveCopyModal()">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="field">
+                    <label class="field-label">Proyecto destino</label>
+                    <select id="massiveCopyDestProject" class="field-select"></select>
+                    <span class="field-hint">Las actividades seleccionadas se copiarán a este proyecto</span>
+                </div>
+                <div class="field">
+                    <label class="copy-option">
+                        <input type="checkbox" id="massiveCopyIncludeChildren" checked />
+                        <span>Incluir subactividades de las seleccionadas</span>
+                    </label>
+                    <span class="field-hint">Si está activado, se copiarán también todas las subactividades de las actividades seleccionadas, aunque no estén marcadas individualmente</span>
+                </div>
+                <div class="field">
+                    <label class="copy-option">
+                        <input type="checkbox" id="massiveCopyComments" checked />
+                        <span>Copiar comentarios</span>
+                    </label>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn--ghost" onclick="closeMassiveCopyModal()">Cancelar</button>
+                <button class="btn btn--primary" onclick="copySelectedActivities()">Copiar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Dependencias externas -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.10.3/sql-wasm.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/frappe-gantt@0.6.1/dist/frappe-gantt.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    
+    <!-- jsPDF, jsPDF-AutoTable y html2canvas -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+    <!-- SortableJS para drag & drop -->
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+
+    <!-- App -->
+    <script src="app.js"></script>
+</body>
+</html>
