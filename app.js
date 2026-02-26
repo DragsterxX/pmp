@@ -1,6 +1,15 @@
 'use strict';
 
-// ─── Globals ──────────────────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════════════
+// CONFIGURACIÓN DE DROPBOX
+// ═══════════════════════════════════════════════════════════════════════════
+// ⚠️ IMPORTANTE: Reemplaza 'TU_TOKEN_DE_ACCESO_AQUI' con tu token real de Dropbox
+const DROPBOX_ACCESS_TOKEN = 'sl.u.AGXasPS1rdA276Ch2HpP4EOQWCRwYDdEfwrEapqdgL03JtrxdOK2EAfGC80CtPFlPQkPA20ulpqT5mE6FRDb2Rtcom8yUi2LM6fgb_EnUK7eXjDZgnGrs_qSVAdrR_nsCtpb6qwD0FoUa6dAF30so9WvWN8WK6dFVait5Ms046VAeKN-kSTQPGqIsKqKWWmF60YeIs1uevsrvXUElzaWNqzJY14Re8H-iTTA5pNmjspdARsyd08Bh72o_g1Eqz8xAeGYNd5-IbYlMTPnlQ4-RdeEm4NpE2qMXObYlxK7UIUvQuX51fkVR3vNukg7aLTI5OXmmj6lkENYiSj82kkGaIVbbyA9PkD-tV3fiBI29vFbAjZfUvg0v-VhYrTYVDKHnF_p53q7RaIcyZoy3qRP7N_xDS4lrKLcjYJPmBPbSLz2cGFJsG5iechu-UMYirh2hedgp3MLDQ9RjEMrFKiVbQoE3xV7r0zD8VyeJNTwyDa8evOae8ahaTt55vUnWFGyluOssaozmK92AjKTReYuGVSPmD5ffDXJSssW9eaEernU3_IGFAZjhhYpsaYjwAbdDaCQYoiQF2wIX82jzRUqg_PfdHFahsXXnvVN1ICSJaNtzp-fXRXM3afe_plW-5iFjoD1NkPB2YW_vey7SMP6MIYnGbhOEoId1AjQ5l-gr81xE5r-AsWCe4FoRE7NYvAPhKbM3A-Ut7tYD8PK_d1Vma1W7IFJZnFSOmATr5KQ7L9ojWPORp7ZbVS985BchSxOrBKB3XLDZZW_iawmZfQ_-kCxSEh-sDPFDGVF5gVgpggo6CGY4z_mPxT91-K2Xt1WDJYUyocP57cFe5KRC1qrp_iliPxFLfrBJf2v5UDgGqCTFzH9tZGxY8dLf_U9m3FMLOtAzNPxNukvomTP06w0V2c3jd9sP22xs3jyu6-RACgHQj2hPDbyqNuRpWSieMsf5ile3PFASMWMDRa1DzSm-ZOLLduGcnJcvEJ5V1_lGULQwAEheD0Q9BjP9m71AhP1OzThXcLBmKtM4oNKX5wifzfFGZBqAwLnkvZ2IRwqW7uHmd2iEAS6CkWdDTKHZQTVr-tGcQkcA_6NYxpWa6vlzxDnujo4GTpuc_sJd-bd6ueDfZCHNNx4j7gR0FvwfZ2iiF1rNV-iGauSIXG2dCMvoXqgggT_Jy64wtbFBiFYiYN6Zf6Wh77CVftI-6eYPqR9zdKmg8dpUyLD8XoBQHL9TdCq51hHHJjf16fF8yV11Z65x7niHquYDC-_lasIBrtygGdwM6iPdftSexhzaYS4ceO1DwXL1AgNykKWvhjeqPoRWA';
+const DROPBOX_FILE_PATH = '/proyectos.db';
+
+// ═══════════════════════════════════════════════════════════════════════════
+// GLOBALES
+// ═══════════════════════════════════════════════════════════════════════════
 let db = null;
 let SQL = null;
 let currentProjectId = null;
@@ -15,7 +24,9 @@ let selectedActivityIds = new Set();
 let dashboardFiltroMacro = '';
 let activitiesSortable = null;
 
-// ─── Utils ────────────────────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════════════
+// UTILIDADES
+// ═══════════════════════════════════════════════════════════════════════════
 function uuidv4() {
   return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
     const r = Math.random() * 16 | 0;
@@ -47,12 +58,18 @@ function mostrarToast(mensaje) {
   alert(mensaje);
 }
 
-// ─── Persistencia con localStorage ────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════════════
+// PERSISTENCIA LOCAL (localStorage)
+// ═══════════════════════════════════════════════════════════════════════════
 function guardarBDenLocalStorage() {
   if (!db) return;
-  const data = db.export();
-  const base64 = btoa(String.fromCharCode.apply(null, data));
-  localStorage.setItem('proyectosDB', base64);
+  try {
+    const data = db.export();
+    const base64 = btoa(String.fromCharCode.apply(null, data));
+    localStorage.setItem('proyectosDB', base64);
+  } catch (e) {
+    console.error('Error guardando en localStorage:', e);
+  }
 }
 
 function cargarBDdeLocalStorage() {
@@ -66,12 +83,121 @@ function cargarBDdeLocalStorage() {
     }
     return new SQL.Database(bytes);
   } catch (e) {
-    console.error('Error al cargar BD desde localStorage', e);
+    console.error('Error cargando desde localStorage:', e);
     return null;
   }
 }
 
-// ─── Gestión de estado de macroproyectos colapsados ───────────────────────
+// ═══════════════════════════════════════════════════════════════════════════
+// PERSISTENCIA EN DROPBOX
+// ═══════════════════════════════════════════════════════════════════════════
+
+/**
+ * Descarga la base de datos desde Dropbox
+ * @returns {Promise<SQL.Database|null>} Base de datos cargada o null si no existe/falla
+ */
+async function cargarBDdeDropbox() {
+  if (DROPBOX_ACCESS_TOKEN === 'TU_TOKEN_DE_ACCESO_AQUI') {
+    console.warn('⚠️ Token de Dropbox no configurado. Usando solo localStorage.');
+    return null;
+  }
+
+  try {
+    console.log('📥 Descargando BD desde Dropbox...');
+    
+    const response = await fetch('https://content.dropboxapi.com/2/files/download', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${DROPBOX_ACCESS_TOKEN}`,
+        'Dropbox-API-Arg': JSON.stringify({ path: DROPBOX_FILE_PATH })
+      }
+    });
+
+    if (!response.ok) {
+      if (response.status === 409) {
+        // Archivo no existe en Dropbox (primera vez)
+        console.log('ℹ️ Archivo no encontrado en Dropbox (primera sincronización)');
+        return null;
+      }
+      throw new Error(`Error Dropbox: ${response.status} - ${response.statusText}`);
+    }
+
+    const arrayBuffer = await response.arrayBuffer();
+    const bytes = new Uint8Array(arrayBuffer);
+    const dbFromDropbox = new SQL.Database(bytes);
+    
+    console.log('✅ BD descargada desde Dropbox correctamente');
+    return dbFromDropbox;
+
+  } catch (error) {
+    console.error('❌ Error descargando desde Dropbox:', error);
+    mostrarToast('No se pudo descargar desde Dropbox. Usando datos locales.');
+    return null;
+  }
+}
+
+/**
+ * Sube la base de datos actual a Dropbox (sobrescribe si existe)
+ * @returns {Promise<boolean>} true si se guardó correctamente, false si falló
+ */
+async function guardarBDenDropbox() {
+  if (!db) {
+    console.warn('⚠️ No hay BD para guardar en Dropbox');
+    return false;
+  }
+
+  if (DROPBOX_ACCESS_TOKEN === 'TU_TOKEN_DE_ACCESO_AQUI') {
+    console.warn('⚠️ Token de Dropbox no configurado. Saltando sincronización.');
+    return false;
+  }
+
+  try {
+    console.log('📤 Subiendo BD a Dropbox...');
+    
+    const data = db.export();
+    const blob = new Blob([data], { type: 'application/octet-stream' });
+
+    const response = await fetch('https://content.dropboxapi.com/2/files/upload', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${DROPBOX_ACCESS_TOKEN}`,
+        'Content-Type': 'application/octet-stream',
+        'Dropbox-API-Arg': JSON.stringify({
+          path: DROPBOX_FILE_PATH,
+          mode: 'overwrite', // Sobrescribir siempre
+          autorename: false,
+          mute: true // No notificar a otros usuarios
+        })
+      },
+      body: blob
+    });
+
+    if (!response.ok) {
+      throw new Error(`Error Dropbox: ${response.status} - ${response.statusText}`);
+    }
+
+    const result = await response.json();
+    console.log('✅ BD guardada en Dropbox:', result.name);
+    return true;
+
+  } catch (error) {
+    console.error('❌ Error guardando en Dropbox:', error);
+    mostrarToast('Advertencia: No se pudo sincronizar con Dropbox. Datos guardados localmente.');
+    return false;
+  }
+}
+
+/**
+ * Guarda en localStorage Y en Dropbox
+ */
+async function guardarBDCompleto() {
+  guardarBDenLocalStorage();
+  await guardarBDenDropbox();
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// GESTIÓN DE ESTADO
+// ═══════════════════════════════════════════════════════════════════════════
 function getMacroCollapseState() {
   try {
     const stored = localStorage.getItem('macroCollapseState');
@@ -87,11 +213,13 @@ function setMacroCollapseState(macroId, collapsed) {
     state[macroId] = collapsed;
     localStorage.setItem('macroCollapseState', JSON.stringify(state));
   } catch (e) {
-    console.error('Error al guardar estado de colapso', e);
+    console.error('Error guardando estado de colapso:', e);
   }
 }
 
-// ─── DB ───────────────────────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════════════
+// BASE DE DATOS
+// ═══════════════════════════════════════════════════════════════════════════
 function migrateDB() {
   try { db.run("ALTER TABLE actividades ADD COLUMN porcentaje INTEGER DEFAULT 0"); } catch (e) { }
   try { db.run("ALTER TABLE actividades ADD COLUMN comentario TEXT DEFAULT ''"); } catch (e) { }
@@ -132,40 +260,65 @@ async function initDB() {
     locateFile: f => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.10.3/${f}`
   });
 
-  const savedDB = cargarBDdeLocalStorage();
-  if (savedDB) {
-    db = savedDB;
+  // 1. Intentar cargar desde Dropbox primero
+  console.log('🔄 Intentando cargar BD desde Dropbox...');
+  const dbFromDropbox = await cargarBDdeDropbox();
+  
+  if (dbFromDropbox) {
+    // Éxito: usar BD de Dropbox
+    db = dbFromDropbox;
     migrateDB();
+    // Guardar también en localStorage como respaldo
+    guardarBDenLocalStorage();
+    console.log('✅ BD cargada desde Dropbox');
   } else {
-    db = new SQL.Database();
-    db.run(`
-      CREATE TABLE IF NOT EXISTS macroproyectos (
-        id TEXT PRIMARY KEY, nombre TEXT NOT NULL, descripcion TEXT DEFAULT ''
-      );
-      CREATE TABLE IF NOT EXISTS proyectos (
-        id TEXT PRIMARY KEY, nombre TEXT NOT NULL, responsable TEXT NOT NULL,
-        macroproyectoId TEXT
-      );
-      CREATE TABLE IF NOT EXISTS actividades (
-        id TEXT PRIMARY KEY, nombre TEXT NOT NULL,
-        tipo TEXT NOT NULL,
-        fechaInicio TEXT NOT NULL, fechaFin TEXT NOT NULL,
-        aprobada INTEGER DEFAULT 0, padre TEXT, proyectoId TEXT NOT NULL,
-        porcentaje INTEGER DEFAULT 0, comentario TEXT DEFAULT '', orden INTEGER DEFAULT 0,
-        FOREIGN KEY (proyectoId) REFERENCES proyectos(id) ON DELETE CASCADE,
-        FOREIGN KEY (padre) REFERENCES actividades(id) ON DELETE SET NULL
-      );
-    `);
+    // 2. Si falla Dropbox, intentar localStorage
+    console.log('🔄 Intentando cargar BD desde localStorage...');
+    const savedDB = cargarBDdeLocalStorage();
+    
+    if (savedDB) {
+      db = savedDB;
+      migrateDB();
+      console.log('✅ BD cargada desde localStorage');
+      // Subir a Dropbox si existe localmente pero no remotamente
+      await guardarBDenDropbox();
+    } else {
+      // 3. Si no hay nada, crear BD nueva
+      console.log('🆕 Creando nueva BD...');
+      db = new SQL.Database();
+      db.run(`
+        CREATE TABLE IF NOT EXISTS macroproyectos (
+          id TEXT PRIMARY KEY, nombre TEXT NOT NULL, descripcion TEXT DEFAULT ''
+        );
+        CREATE TABLE IF NOT EXISTS proyectos (
+          id TEXT PRIMARY KEY, nombre TEXT NOT NULL, responsable TEXT NOT NULL,
+          macroproyectoId TEXT
+        );
+        CREATE TABLE IF NOT EXISTS actividades (
+          id TEXT PRIMARY KEY, nombre TEXT NOT NULL,
+          tipo TEXT NOT NULL,
+          fechaInicio TEXT NOT NULL, fechaFin TEXT NOT NULL,
+          aprobada INTEGER DEFAULT 0, padre TEXT, proyectoId TEXT NOT NULL,
+          porcentaje INTEGER DEFAULT 0, comentario TEXT DEFAULT '', orden INTEGER DEFAULT 0,
+          FOREIGN KEY (proyectoId) REFERENCES proyectos(id) ON DELETE CASCADE,
+          FOREIGN KEY (padre) REFERENCES actividades(id) ON DELETE SET NULL
+        );
+      `);
+      // Guardar la BD nueva tanto local como remotamente
+      await guardarBDCompleto();
+      console.log('✅ Nueva BD creada y sincronizada');
+    }
   }
 }
 
-// ─── Progress helper ──────────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════════════
+// LÓGICA DE NEGOCIO
+// ═══════════════════════════════════════════════════════════════════════════
 function getProgreso(act) {
   if (act.tipo === 'puntos') return act.porcentaje || 0;
   return act.aprobada ? 100 : 0;
 }
 
-// ─── Business Logic ───────────────────────────────────────────────────────
 function getProyectos() {
   return rows(db.exec("SELECT * FROM proyectos ORDER BY nombre"));
 }
@@ -213,7 +366,6 @@ function calcularProgresoActividad(actId, acts) {
   return Math.round(hijos.reduce((s, h) => s + calcularProgresoActividad(h.id, acts), 0) / hijos.length);
 }
 
-// ─── Reordenamiento cronológico de actividades ────────────────────────────
 function reordenarActividadesPorFecha(proyectoId) {
   const acts = getActividades(proyectoId);
   const raices = acts.filter(a => !a.padre).sort((a, b) => a.fechaInicio.localeCompare(b.fechaInicio));
@@ -233,7 +385,6 @@ function reordenarActividadesPorFecha(proyectoId) {
   });
 }
 
-// ─── Validación de fechas de subactividades ───────────────────────────────
 function validarYAjustarFechasSubactividad(actividadId, fechaInicioPropuesta, padre) {
   if (!padre) return fechaInicioPropuesta;
   
@@ -248,7 +399,6 @@ function validarYAjustarFechasSubactividad(actividadId, fechaInicioPropuesta, pa
   return fechaInicioPropuesta;
 }
 
-// ─── Ajustar fechas de hijos cuando cambia la fecha del padre ─────────────
 function ajustarFechasHijosSiNecesario(padreId, nuevaFechaInicio) {
   const hijos = rows(db.exec("SELECT * FROM actividades WHERE padre=?", [padreId]));
   hijos.forEach(hijo => {
@@ -258,7 +408,9 @@ function ajustarFechasHijosSiNecesario(padreId, nuevaFechaInicio) {
   });
 }
 
-// ─── Sidebar Collapse ─────────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════════════
+// INTERFAZ - SIDEBAR
+// ═══════════════════════════════════════════════════════════════════════════
 function toggleSidebar() {
   const sidebar = document.querySelector('.projects-sidebar');
   const isCollapsed = sidebar.classList.toggle('sidebar--collapsed');
@@ -272,7 +424,6 @@ function initSidebarState() {
   }
 }
 
-// ─── Toggle macroproyecto ─────────────────────────────────────────────────
 function toggleMacroproyecto(macroId) {
   const state = getMacroCollapseState();
   const isCollapsed = !state[macroId];
@@ -280,7 +431,6 @@ function toggleMacroproyecto(macroId) {
   renderProyectos();
 }
 
-// ─── Section Collapse ─────────────────────────────────────────────────────
 function getSectionState(key) {
   try {
     const stored = localStorage.getItem('sectionCollapsed');
@@ -317,7 +467,9 @@ function applySectionState(key) {
   if (chevron) chevron.style.transform = collapsed ? 'rotate(-90deg)' : 'rotate(0deg)';
 }
 
-// ─── Render: Proyectos Sidebar (con desplegables) ─────────────────────────
+// ═══════════════════════════════════════════════════════════════════════════
+// RENDER - PROYECTOS SIDEBAR
+// ═══════════════════════════════════════════════════════════════════════════
 function renderProyectos() {
   const list = document.getElementById('projectsList');
   list.innerHTML = '';
@@ -358,14 +510,12 @@ function renderProyectos() {
         </div>`;
       section.appendChild(header);
 
-      // Proyectos del macroproyecto (solo si está expandido)
       if (isExpanded) {
         mProyectos.forEach(p => {
           section.appendChild(buildProjectItem(p, isCollapsed, true));
         });
       }
     } else {
-      // Sidebar colapsado: mostrar proyectos siempre
       mProyectos.forEach(p => {
         section.appendChild(buildProjectItem(p, isCollapsed, false));
       });
@@ -374,7 +524,6 @@ function renderProyectos() {
     list.appendChild(section);
   });
 
-  // Botón para añadir macroproyecto
   if (!isCollapsed) {
     const addMacroBtn = document.createElement('div');
     addMacroBtn.className = 'sidebar-add-macro';
@@ -394,7 +543,6 @@ function buildProjectItem(p, isCollapsed, indented) {
   if (isCollapsed) {
     div.title = `${p.nombre} — ${estado} (${cumplimiento}%)`;
     
-    // Si tiene macroproyecto, agregar indicador
     if (p.macroproyectoId) {
       const macros = getMacroproyectos();
       const macro = macros.find(m => m.id === p.macroproyectoId);
@@ -425,7 +573,9 @@ function selectProject(id) {
   renderDetalleProyecto();
 }
 
-// ─── Render: Detalle Proyecto ─────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════════════
+// RENDER - DETALLE PROYECTO
+// ═══════════════════════════════════════════════════════════════════════════
 function renderDetalleProyecto() {
   const empty = document.getElementById('emptyProjectState');
   const detail = document.getElementById('projectDetail');
@@ -465,7 +615,9 @@ function renderDetalleProyecto() {
   }
 }
 
-// ─── Render: Actividades Table (con drag & drop) ──────────────────────────
+// ═══════════════════════════════════════════════════════════════════════════
+// RENDER - TABLA DE ACTIVIDADES
+// ═══════════════════════════════════════════════════════════════════════════
 function renderActividades() {
   const acts = getActividades(currentProjectId);
   const tbody = document.getElementById('activitiesTableBody');
@@ -483,7 +635,6 @@ function renderActividades() {
 
   const conHijos = new Set(acts.filter(a => a.padre).map(a => a.padre));
   
-  // Construir estructura ordenada
   const ordered = [];
   const raices = acts.filter(a => !a.padre);
   const hijos = acts.filter(a => a.padre);
@@ -546,7 +697,6 @@ function renderActividades() {
     tbody.appendChild(tr);
   });
 
-  // Inicializar SortableJS
   if (activitiesSortable) {
     activitiesSortable.destroy();
   }
@@ -567,27 +717,26 @@ function renderActividades() {
   updateSelectAllCheckbox();
 }
 
-// ─── Actualizar orden después de drag & drop ──────────────────────────────
-function actualizarOrdenDespuesDragDrop(actividadId, newIndex) {
+async function actualizarOrdenDespuesDragDrop(actividadId, newIndex) {
   const acts = getActividades(currentProjectId);
   const act = acts.find(a => a.id === actividadId);
   if (!act) return;
   
-  // Obtener IDs en el orden actual de la tabla
   const tbody = document.getElementById('activitiesTableBody');
   const rows = Array.from(tbody.querySelectorAll('tr'));
   const idsOrdenados = rows.map(row => row.getAttribute('data-id')).filter(id => id);
   
-  // Reasignar orden según la nueva posición
   idsOrdenados.forEach((id, idx) => {
     db.run("UPDATE actividades SET orden=? WHERE id=?", [idx + 1, id]);
   });
   
-  guardarBDenLocalStorage();
+  await guardarBDCompleto();
   renderDetalleProyecto();
 }
 
-// ─── Selección múltiple ───────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════════════
+// SELECCIÓN MÚLTIPLE
+// ═══════════════════════════════════════════════════════════════════════════
 function toggleActivitySelection(id) {
   if (selectedActivityIds.has(id)) {
     selectedActivityIds.delete(id);
@@ -635,7 +784,9 @@ function updateSelectAllCheckbox() {
   }
 }
 
-// ─── Comentario persistente ───────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════════════
+// COMENTARIOS
+// ═══════════════════════════════════════════════════════════════════════════
 function mostrarComentario(actId) {
   const acts = getActividades(currentProjectId);
   const act = acts.find(a => a.id === actId);
@@ -676,7 +827,10 @@ function handleOutsideCommentClick(e) {
     cerrarComentario();
   }
 }
-// ─── Render: Gantt Proyecto ───────────────────────────────────────────────
+
+// ═══════════════════════════════════════════════════════════════════════════
+// GANTT PROYECTO
+// ═══════════════════════════════════════════════════════════════════════════
 function renderGanttProyecto() {
   const container = document.getElementById('projectGanttContainer');
   container.innerHTML = '';
@@ -712,7 +866,6 @@ function renderGanttProyecto() {
   } catch (e) { console.error('Gantt proyecto:', e); }
 }
 
-// ─── Gantt Tooltip Persistente ────────────────────────────────────────────
 function mostrarTooltipGantt(task, acts) {
   const act = acts.find(a => a.id === task.id);
   if (!act) return;
@@ -761,7 +914,9 @@ function handleOutsideGanttTooltip(e) {
   }
 }
 
-// ─── Render: Dashboard ───────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════════════
+// DASHBOARD
+// ═══════════════════════════════════════════════════════════════════════════
 function getProyectosFiltrados() {
   const proyectos = getProyectos();
   if (!dashboardFiltroMacro) return proyectos;
@@ -809,7 +964,7 @@ function renderDashboardGantt() {
     const { inicio, fin } = calcularFechasProyecto(p.id);
     if (!inicio || !fin) return null;
     const { cumplimiento } = calcularEstadoYCumplimiento(p.id);
-    if (cumplimiento === 100) return null; // Filtrar proyectos 100% completos
+    if (cumplimiento === 100) return null;
     return {
       id: p.id,
       name: p.nombre.length > 20 ? p.nombre.substring(0, 20) + '...' : p.nombre,
@@ -872,9 +1027,9 @@ function renderGraficaCumplimiento() {
   const labels = datosProyectos.map(p => p.nombre);
   const data = datosProyectos.map(p => p.cumplimiento);
   const colors = data.map(c => {
-    if (c >= 80) return '#5ca069'; // Verde éxito
-    if (c >= 50) return '#CFF09F'; // Amarillo/verde claro
-    return '#B85C5C'; // Rojo (mantener para errores)
+    if (c >= 80) return '#5ca069';
+    if (c >= 50) return '#CFF09F';
+    return '#B85C5C';
   });
 
   const canvas = document.getElementById('complianceChart');
@@ -988,11 +1143,7 @@ function renderProximasActividades() {
   const actividadesConDias = todasActividades.map(act => {
     const fechaFin = new Date(act.fechaFin);
     fechaFin.setHours(0, 0, 0, 0);
-    
-    // Cálculo simple: diferencia de días calendario
-    // Ejemplo: 20/02 a 23/02 = 3 días, 21/02 a 23/02 = 2 días
     const dias = Math.round((fechaFin - hoy) / (1000 * 60 * 60 * 24));
-    
     return { ...act, diasRestantes: dias };
   });
   
@@ -1079,7 +1230,9 @@ function aplicarFiltroDashboard() {
   renderProximasActividades();
 }
 
-// ─── Tabs ─────────────────────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════════════
+// NAVEGACIÓN
+// ═══════════════════════════════════════════════════════════════════════════
 function switchMainTab(tab) {
   document.querySelectorAll('.nav-item').forEach((btn, i) => {
     btn.classList.toggle('active', (tab === 'projects' && i === 0) || (tab === 'dashboard' && i === 1));
@@ -1095,17 +1248,9 @@ function switchMainTab(tab) {
   }
 }
 
-// ─── DEPRECATED: Ya no se usa (tabs eliminados) ───────────────────────────
-// function switchProjectTab(tab) {
-//   const btns = document.querySelectorAll('.tab-btn');
-//   btns[0].classList.toggle('active', tab === 'activities');
-//   btns[1].classList.toggle('active', tab === 'gantt');
-//   document.getElementById('activitiesTab').classList.toggle('active', tab === 'activities');
-//   document.getElementById('ganttTab').classList.toggle('active', tab === 'gantt');
-//   if (tab === 'gantt') renderGanttProyecto();
-// }
-
-// ─── Modal helpers ────────────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════════════
+// MODALES
+// ═══════════════════════════════════════════════════════════════════════════
 function showModal(id) { document.getElementById(id).classList.add('show'); }
 function hideModal(id) { document.getElementById(id).classList.remove('show'); }
 
@@ -1119,7 +1264,9 @@ document.addEventListener('click', e => {
   }
 });
 
-// ─── Modal: Macroproyecto ─────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════════════
+// MODAL: MACROPROYECTO
+// ═══════════════════════════════════════════════════════════════════════════
 function openMacroproyectoModal(id) {
   editingMacroproyectoId = id || null;
   document.getElementById('macroproyectoModalTitle').textContent = id ? 'Editar Macroproyecto' : 'Nuevo Macroproyecto';
@@ -1141,7 +1288,7 @@ function closeMacroproyectoModal() {
   editingMacroproyectoId = null;
 }
 
-function saveMacroproyecto() {
+async function saveMacroproyecto() {
   const nombre = document.getElementById('macroproyectoNombre').value.trim();
   const descripcion = document.getElementById('macroproyectoDescripcion').value.trim();
   if (!nombre) { alert('El nombre es obligatorio.'); return; }
@@ -1152,20 +1299,23 @@ function saveMacroproyecto() {
     const id = uuidv4();
     db.run("INSERT INTO macroproyectos (id, nombre, descripcion) VALUES (?,?,?)", [id, nombre, descripcion]);
   }
-  guardarBDenLocalStorage();
+  
+  await guardarBDCompleto();
   closeMacroproyectoModal();
   renderProyectos();
 }
 
-function deleteMacroproyecto(id) {
+async function deleteMacroproyecto(id) {
   if (!confirm('¿Eliminar este macroproyecto? Los proyectos asociados quedarán sin macroproyecto.')) return;
   db.run("UPDATE proyectos SET macroproyectoId=NULL WHERE macroproyectoId=?", [id]);
   db.run("DELETE FROM macroproyectos WHERE id=?", [id]);
-  guardarBDenLocalStorage();
+  await guardarBDCompleto();
   renderProyectos();
 }
 
-// ─── Modal: Proyecto ──────────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════════════
+// MODAL: PROYECTO
+// ═══════════════════════════════════════════════════════════════════════════
 function openProjectModal(editar) {
   editingProjectId = editar || null;
   document.getElementById('projectModalTitle').textContent = editar ? 'Editar Proyecto' : 'Nuevo Proyecto';
@@ -1199,7 +1349,7 @@ function closeProjectModal() {
   editingProjectId = null;
 }
 
-function saveProject() {
+async function saveProject() {
   const nombre = document.getElementById('projectName').value.trim();
   const responsable = document.getElementById('projectResponsible').value.trim();
   const macroproyectoId = document.getElementById('projectMacroproyecto').value || null;
@@ -1208,7 +1358,7 @@ function saveProject() {
   if (editingProjectId) {
     db.run("UPDATE proyectos SET nombre=?, responsable=?, macroproyectoId=? WHERE id=?",
       [nombre, responsable, macroproyectoId, editingProjectId]);
-    guardarBDenLocalStorage();
+    await guardarBDCompleto();
     closeProjectModal();
     renderProyectos();
     if (currentProjectId === editingProjectId) renderDetalleProyecto();
@@ -1216,7 +1366,7 @@ function saveProject() {
     const id = uuidv4();
     db.run("INSERT INTO proyectos (id, nombre, responsable, macroproyectoId) VALUES (?,?,?,?)",
       [id, nombre, responsable, macroproyectoId]);
-    guardarBDenLocalStorage();
+    await guardarBDCompleto();
     closeProjectModal();
     renderProyectos();
     selectProject(id);
@@ -1227,11 +1377,11 @@ function editCurrentProject() {
   if (currentProjectId) openProjectModal(currentProjectId);
 }
 
-function deleteCurrentProject() {
+async function deleteCurrentProject() {
   if (!currentProjectId || !confirm('¿Eliminar este proyecto y todas sus actividades?')) return;
   db.run("DELETE FROM actividades WHERE proyectoId=?", [currentProjectId]);
   db.run("DELETE FROM proyectos WHERE id=?", [currentProjectId]);
-  guardarBDenLocalStorage();
+  await guardarBDCompleto();
   currentProjectId = null;
   renderProyectos();
   const ps = getProyectos();
@@ -1239,7 +1389,9 @@ function deleteCurrentProject() {
   else renderDetalleProyecto();
 }
 
-// ─── Modal: Actividad ─────────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════════════
+// MODAL: ACTIVIDAD
+// ═══════════════════════════════════════════════════════════════════════════
 function openActivityModal(id) {
   editingActivityId = id || null;
   document.getElementById('activityModalTitle').textContent = id ? 'Editar Actividad' : 'Nueva Actividad';
@@ -1359,9 +1511,7 @@ function handleActivityTypeChange() {
   }
 }
 
-
-// ─── Save Activity (con validación de fechas y reordenamiento) ────────────
-function saveActivity() {
+async function saveActivity() {
   try {
     const nombre = document.getElementById('activityName').value.trim();
     const tipo = document.getElementById('activityType').value;
@@ -1386,7 +1536,6 @@ function saveActivity() {
       return;
     }
 
-    // Validación y ajuste de fechas para subactividades
     let fechaInicioFinal = fechaInicio;
     if (padre) {
       fechaInicioFinal = validarYAjustarFechasSubactividad(editingActivityId, fechaInicio, padre);
@@ -1400,12 +1549,10 @@ function saveActivity() {
         [nombre, tipo, fechaInicioFinal, fechaFin, aprobada, padre, porcentaje, comentario, editingActivityId]
       );
       
-      // Si cambió la fecha de inicio de una actividad padre, ajustar hijos
       if (!actAnterior.padre && actAnterior.fechaInicio !== fechaInicioFinal) {
         ajustarFechasHijosSiNecesario(editingActivityId, fechaInicioFinal);
       }
       
-      // Si es actividad principal (sin padre), reordenar por fecha
       if (!padre) {
         reordenarActividadesPorFecha(currentProjectId);
       }
@@ -1420,13 +1567,12 @@ function saveActivity() {
         [newId, nombre, tipo, fechaInicioFinal, fechaFin, aprobada, padre, currentProjectId, porcentaje, comentario, nuevoOrden]
       );
       
-      // Si es actividad principal, reordenar por fecha
       if (!padre) {
         reordenarActividadesPorFecha(currentProjectId);
       }
     }
     
-    guardarBDenLocalStorage();
+    await guardarBDCompleto();
     closeActivityModal();
     renderDetalleProyecto();
     renderProyectos();
@@ -1438,15 +1584,18 @@ function saveActivity() {
 
 function editActivity(id) { openActivityModal(id); }
 
-function deleteActivity(id) {
+async function deleteActivity(id) {
   if (!confirm('¿Eliminar esta actividad?')) return;
   db.run("UPDATE actividades SET padre=NULL WHERE padre=?", [id]);
   db.run("DELETE FROM actividades WHERE id=?", [id]);
-  guardarBDenLocalStorage();
+  await guardarBDCompleto();
   renderDetalleProyecto();
   renderProyectos();
 }
-// ─── Modal: Copiar Actividad ──────────────────────────────────────────────
+
+// ═══════════════════════════════════════════════════════════════════════════
+// MODAL: COPIAR ACTIVIDAD
+// ═══════════════════════════════════════════════════════════════════════════
 function openCopyActivityModal(actId) {
   copyingActivityId = actId;
   const sel = document.getElementById('copyDestProject');
@@ -1457,7 +1606,6 @@ function openCopyActivityModal(actId) {
     opt.textContent = p.nombre + (p.id === currentProjectId ? ' (actual)' : '');
     sel.appendChild(opt);
   });
-  // Default to first other project
   const otros = getProyectos().filter(p => p.id !== currentProjectId);
   if (otros.length) sel.value = otros[0].id;
   else sel.value = currentProjectId;
@@ -1472,7 +1620,7 @@ function closeCopyActivityModal() {
   copyingActivityId = null;
 }
 
-function copyActivity() {
+async function copyActivity() {
   if (!copyingActivityId) return;
   const destProjectId = document.getElementById('copyDestProject').value;
   const incluirHijos = document.getElementById('copiarHijos').checked;
@@ -1484,7 +1632,6 @@ function copyActivity() {
   const actToCopy = acts.find(a => a.id === copyingActivityId);
   if (!actToCopy) return;
 
-  // Calcular orden para actividades copiadas (al final del proyecto destino)
   const actsDestino = getActividades(destProjectId);
   let ordenBase = actsDestino.length > 0 ? Math.max(...actsDestino.map(a => a.orden || 0)) + 1 : 1;
 
@@ -1502,7 +1649,7 @@ function copyActivity() {
 
   insertarActividad(actToCopy, null);
 
-  guardarBDenLocalStorage();
+  await guardarBDCompleto();
   closeCopyActivityModal();
 
   if (destProjectId === currentProjectId) {
@@ -1512,7 +1659,9 @@ function copyActivity() {
   alert('Actividad copiada correctamente.');
 }
 
-// ─── Modal: Copiar Masivo ─────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════════════
+// MODAL: COPIA MASIVA
+// ═══════════════════════════════════════════════════════════════════════════
 function openMassiveCopyModal() {
   if (selectedActivityIds.size === 0) {
     alert('Selecciona al menos una actividad para copiar.');
@@ -1528,7 +1677,6 @@ function openMassiveCopyModal() {
     sel.appendChild(opt);
   });
   
-  // Default to first other project
   const otros = getProyectos().filter(p => p.id !== currentProjectId);
   if (otros.length) sel.value = otros[0].id;
   else sel.value = currentProjectId;
@@ -1543,7 +1691,7 @@ function closeMassiveCopyModal() {
   hideModal('massiveCopyModal');
 }
 
-function copySelectedActivities() {
+async function copySelectedActivities() {
   const destProjectId = document.getElementById('massiveCopyDestProject').value;
   const includeChildren = document.getElementById('massiveCopyIncludeChildren').checked;
   const copyComments = document.getElementById('massiveCopyComments').checked;
@@ -1561,18 +1709,15 @@ function copySelectedActivities() {
   const acts = getActividades(currentProjectId);
   const selectedActs = acts.filter(a => selectedActivityIds.has(a.id));
   
-  // Calcular orden para actividades copiadas (al final del proyecto destino)
   const actsDestino = getActividades(destProjectId);
   let ordenBase = actsDestino.length > 0 ? Math.max(...actsDestino.map(a => a.orden || 0)) + 1 : 1;
   
-  // Mapa para rastrear IDs antiguos -> nuevos IDs
   const idMap = new Map();
   
   function copiarActividadConHijos(act) {
     const newId = uuidv4();
     const comentario = copyComments ? (act.comentario || '') : '';
     
-    // Determinar padre: si el padre original está en el mapa, usar el nuevo ID; si no, null
     let newPadre = null;
     if (act.padre && idMap.has(act.padre)) {
       newPadre = idMap.get(act.padre);
@@ -1585,22 +1730,19 @@ function copySelectedActivities() {
     
     idMap.set(act.id, newId);
     
-    // Si incluir hijos está activado, copiar todos los hijos (incluso los no seleccionados)
     if (includeChildren) {
       const hijos = acts.filter(a => a.padre === act.id);
       hijos.forEach(hijo => copiarActividadConHijos(hijo));
     }
   }
   
-  // Copiar solo las actividades raíz seleccionadas (no copiar subactividades seleccionadas de padres también seleccionados)
   const raicesSeleccionadas = selectedActs.filter(act => {
-    // Una actividad es raíz si no tiene padre O su padre no está seleccionado
     return !act.padre || !selectedActivityIds.has(act.padre);
   });
   
   raicesSeleccionadas.forEach(act => copiarActividadConHijos(act));
   
-  guardarBDenLocalStorage();
+  await guardarBDCompleto();
   closeMassiveCopyModal();
   
   if (destProjectId === currentProjectId) {
@@ -1612,13 +1754,16 @@ function copySelectedActivities() {
   selectedActivityIds.clear();
 }
 
-// ─── Toggle label (live) ──────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════════════
+// EVENTOS
+// ═══════════════════════════════════════════════════════════════════════════
 document.getElementById('activityApproved').addEventListener('change', function () {
   document.getElementById('toggleLabel').textContent = this.checked ? 'Aprobada' : 'Pendiente';
 });
 
-// ─── Exportar Reporte PDF ─────────────────────────────────────────────────
-// ─── Exportar Reporte PDF (Versión definitiva) ───────────────────────────
+// ═══════════════════════════════════════════════════════════════════════════
+// EXPORTAR REPORTE PDF
+// ═══════════════════════════════════════════════════════════════════════════
 async function exportarReportePDF() {
   try {
     const { jsPDF } = window.jspdf;
@@ -1634,24 +1779,21 @@ async function exportarReportePDF() {
       compress: true
     });
     
-    // Colores (RGB)
     const colorPrimario = [26, 23, 20];
     const colorSecundario = [74, 70, 64];
     const colorMuted = [140, 133, 121];
-    const colorAccent = [124, 191, 113]; // #7cbf71
-    const colorVerde = [92, 160, 105]; // #5ca069
-    const colorAmarillo = [207, 240, 159]; // #CFF09F
-    const colorRojo = [184, 92, 92]; // #B85C5C (mantener)
+    const colorAccent = [124, 191, 113];
+    const colorVerde = [92, 160, 105];
+    const colorAmarillo = [207, 240, 159];
+    const colorRojo = [184, 92, 92];
     const colorFondo = [245, 243, 238];
     
     let yPos = 20;
     const margen = 20;
     const anchoUtil = 170;
     
-    // Guardar estado actual
     const dashboardActive = document.getElementById('dashboard-module').classList.contains('active');
     
-    // Activar Dashboard si no está activo
     if (!dashboardActive) {
       switchMainTab('dashboard');
       await new Promise(resolve => setTimeout(resolve, 800));
@@ -1661,13 +1803,12 @@ async function exportarReportePDF() {
       await new Promise(resolve => setTimeout(resolve, 500));
     }
     
-    // Forzar actualización de Chart.js
     if (complianceChart) {
       complianceChart.update();
       await new Promise(resolve => setTimeout(resolve, 100));
     }
     
-    // ========== ENCABEZADO ==========
+    // Encabezado
     doc.setFillColor(...colorFondo);
     doc.rect(0, 0, 210, 50, 'F');
     
@@ -1707,7 +1848,7 @@ async function exportarReportePDF() {
     
     yPos = 55;
     
-    // ========== RESUMEN EJECUTIVO ==========
+    // Resumen ejecutivo
     doc.setFontSize(14);
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(...colorPrimario);
@@ -1751,7 +1892,7 @@ async function exportarReportePDF() {
     
     yPos = doc.lastAutoTable.finalY + 12;
     
-    // ========== TABLA DE CUMPLIMIENTO POR PROYECTO ==========
+    // Tabla de cumplimiento
     doc.setFontSize(12);
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(...colorPrimario);
@@ -1809,7 +1950,7 @@ async function exportarReportePDF() {
     
     yPos = doc.lastAutoTable.finalY + 15;
     
-    // ========== GRÁFICOS ==========
+    // Gráficos
     doc.addPage();
     yPos = 20;
     
@@ -1819,7 +1960,6 @@ async function exportarReportePDF() {
     doc.text('Graficos del Dashboard', margen, yPos);
     yPos += 12;
     
-    // Capturar gráfico de barras (Chart.js)
     try {
       if (complianceChart && complianceChart.canvas) {
         doc.setFontSize(12);
@@ -1849,7 +1989,6 @@ async function exportarReportePDF() {
       yPos += 10;
     }
     
-    // Capturar Gantt con html2canvas
     try {
       const ganttContainer = document.getElementById('dashboardGanttContainer');
       if (ganttContainer && ganttContainer.querySelector('.gantt')) {
@@ -1902,7 +2041,7 @@ async function exportarReportePDF() {
       yPos += 10;
     }
     
-    // ========== LISTA DETALLADA DE PROYECTOS ==========
+    // Detalle de proyectos
     doc.addPage();
     yPos = 20;
     
@@ -2032,7 +2171,7 @@ async function exportarReportePDF() {
       yPos += 5;
     });
     
-    // ========== PIE DE PÁGINA ==========
+    // Pie de página
     const totalPaginas = doc.internal.getNumberOfPages();
     for (let i = 1; i <= totalPaginas; i++) {
       doc.setPage(i);
@@ -2043,7 +2182,7 @@ async function exportarReportePDF() {
       doc.text('Gestion de Proyectos', margen, 287);
     }
     
-    // ========== GUARDAR PDF ==========
+    // Guardar PDF
     const nombreFiltro = dashboardFiltroMacro 
       ? '_' + getMacroproyectos().find(m => m.id === dashboardFiltroMacro)?.nombre.replace(/\s+/g, '_') 
       : '';
@@ -2051,7 +2190,6 @@ async function exportarReportePDF() {
     
     doc.save(nombreArchivo);
     
-    // Restaurar estado original
     if (!dashboardActive) {
       switchMainTab('projects');
     }
@@ -2069,7 +2207,9 @@ async function exportarReportePDF() {
   }
 }
 
-// ─── Export / Import / Reset ──────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════════════
+// EXPORTAR / IMPORTAR / RESETEAR
+// ═══════════════════════════════════════════════════════════════════════════
 function exportarBaseDatos() {
   if (!db) return;
   const blob = new Blob([db.export()], { type: 'application/octet-stream' });
@@ -2081,21 +2221,22 @@ function exportarBaseDatos() {
   URL.revokeObjectURL(url);
 }
 
-function importarBaseDatos(event) {
+async function importarBaseDatos(event) {
   const file = event.target.files[0];
   if (!file) return;
   const reader = new FileReader();
-  reader.onload = e => {
+  reader.onload = async (e) => {
     try {
       db = new SQL.Database(new Uint8Array(e.target.result));
       migrateDB();
-      guardarBDenLocalStorage();
+      await guardarBDCompleto();
       currentProjectId = null;
       selectedActivityIds.clear();
       renderProyectos();
       const ps = getProyectos();
       if (ps.length) selectProject(ps[0].id);
       else renderDetalleProyecto();
+      mostrarToast('Base de datos importada y sincronizada con Dropbox');
     } catch (err) {
       alert('Error al importar la base de datos.');
       console.error(err);
@@ -2105,7 +2246,7 @@ function importarBaseDatos(event) {
   event.target.value = '';
 }
 
-function resetearBaseDatos() {
+async function resetearBaseDatos() {
   if (!confirm('¿Restaurar datos de ejemplo? Se perderán los datos actuales.')) return;
   db = new SQL.Database();
   db.run(`
@@ -2119,19 +2260,22 @@ function resetearBaseDatos() {
       porcentaje INTEGER DEFAULT 0, comentario TEXT DEFAULT '', orden INTEGER DEFAULT 0
     );
   `);
-  guardarBDenLocalStorage();
+  await guardarBDCompleto();
   currentProjectId = null;
   selectedActivityIds.clear();
   renderProyectos();
   renderDetalleProyecto();
 }
 
-// ─── Init ─────────────────────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════════════
+// INICIALIZACIÓN
+// ═══════════════════════════════════════════════════════════════════════════
 async function init() {
   try {
     await initDB();
   } catch (e) {
     console.error('Error inicializando BD:', e);
+    alert('Error al inicializar la base de datos. Revise la consola.');
   }
 
   const loading = document.getElementById('loadingScreen');
