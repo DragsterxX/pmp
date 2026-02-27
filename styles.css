@@ -1614,84 +1614,6 @@ body {
 }
 
 /* ======================================= */
-/* RESPONSIVE                              */
-/* ======================================= */
-@media (max-width: 768px) {
-    .projects-layout {
-        flex-direction: column;
-    }
-
-    .projects-sidebar {
-        width: 100% !important;
-        min-width: 100% !important;
-        border-right: none;
-        border-bottom: 1px solid var(--border);
-        max-height: 260px;
-    }
-
-    .project-detail-panel {
-        padding: var(--space-md);
-    }
-
-    .detail-header {
-        padding: var(--space-md);
-    }
-
-    .detail-meta-compact {
-        gap: var(--space-sm);
-    }
-
-    .tab-panel {
-        padding: var(--space-md);
-    }
-
-    .dashboard-content {
-        padding: var(--space-lg);
-    }
-
-    .field-row {
-        grid-template-columns: 1fr;
-    }
-
-    .app-header {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: var(--space-sm);
-        padding: var(--space-sm) var(--space-md);
-    }
-
-    .header-right {
-        flex-wrap: wrap;
-        gap: 6px;
-    }
-
-    .header-divider {
-        display: none;
-    }
-
-    .main-nav {
-        padding: 0 var(--space-md);
-    }
-
-    .detail-header-top {
-        flex-direction: column;
-        gap: var(--space-sm);
-        align-items: flex-start;
-    }
-
-    .detail-title {
-        font-size: 18px;
-    }
-
-    .gantt-tooltip-persistent,
-    .comment-panel {
-        right: 12px;
-        left: 12px;
-        max-width: none;
-    }
-}
-
-/* ======================================= */
 /* DASHBOARD MEJORADO                      */
 /* ======================================= */
 
@@ -1873,20 +1795,6 @@ body {
     font-size: 14px;
 }
 
-@media (max-width: 768px) {
-    .kpi-grid {
-        grid-template-columns: repeat(2, 1fr);
-    }
-    
-    .upcoming-activity-item {
-        grid-template-columns: 1fr;
-        gap: var(--space-sm);
-    }
-    
-    .upcoming-activity-date {
-        text-align: left;
-    }
-}
 /* ======================================= */
 /* MACROPROYECTOS DESPLEGABLES             */
 /* ======================================= */
@@ -1937,4 +1845,283 @@ tr:hover .drag-handle {
 
 .activities-table tbody tr {
     transition: background 0.15s var(--ease);
+}
+
+/* ======================================= */
+/* MEJORAS RESPONSIVE PARA MÓVIL           */
+/* ======================================= */
+@media (max-width: 768px) {
+    /* Tabla de actividades con scroll horizontal */
+    .table-wrapper {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        margin: 0 calc(-1 * var(--space-md));
+        padding: 0 var(--space-md);
+    }
+    
+    .activities-table {
+        min-width: 800px; /* Ancho mínimo para que todas las columnas sean legibles */
+    }
+    
+    /* Botones más grandes para facilitar toque */
+    .btn, .header-action, .nav-item {
+        min-height: 44px;
+        padding: 12px 16px;
+        font-size: 15px;
+    }
+    
+    .project-item {
+        min-height: 44px;
+        padding: 12px var(--space-md);
+    }
+    
+    /* Ajustes de espaciado */
+    .detail-header {
+        padding: 16px;
+    }
+    
+    .detail-title {
+        font-size: 18px;
+    }
+    
+    .meta-item {
+        flex-wrap: wrap;
+    }
+    
+    /* Sidebar más usable */
+    .projects-sidebar:not(.sidebar--collapsed) {
+        max-height: 300px;
+        overflow-y: auto;
+    }
+    
+    /* Modales con buen ancho */
+    .modal {
+        width: 95%;
+        margin: 10px auto;
+        max-height: 90vh;
+    }
+    
+    /* Campos de formulario más grandes */
+    .field-input, .field-select {
+        font-size: 16px; /* Previene zoom automático en iOS */
+        padding: 12px;
+        min-height: 44px;
+    }
+    
+    textarea.field-input {
+        min-height: 80px;
+    }
+    
+    /* Dashboard: tarjetas en una columna */
+    .kpi-grid {
+        grid-template-columns: 1fr;
+        gap: var(--space-md);
+    }
+    
+    .upcoming-activity-item {
+        grid-template-columns: 1fr;
+        gap: var(--space-sm);
+    }
+    
+    .upcoming-activity-date {
+        text-align: left;
+    }
+    
+    .upcoming-activity-days {
+        align-self: flex-start;
+    }
+    
+    /* Header responsive */
+    .app-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: var(--space-sm);
+        padding: var(--space-sm) var(--space-md);
+    }
+    
+    .header-right {
+        flex-wrap: wrap;
+        gap: 6px;
+        width: 100%;
+    }
+    
+    .header-divider {
+        display: none;
+    }
+    
+    /* Navegación */
+    .main-nav {
+        padding: 0 var(--space-md);
+    }
+    
+    .nav-item {
+        padding: var(--space-md) var(--space-lg);
+    }
+    
+    /* Detail header */
+    .detail-header-top {
+        flex-direction: column;
+        gap: var(--space-sm);
+        align-items: flex-start;
+    }
+    
+    .detail-actions {
+        width: 100%;
+        justify-content: flex-start;
+    }
+    
+    /* Tooltips y paneles flotantes */
+    .gantt-tooltip-persistent,
+    .comment-panel {
+        right: 12px;
+        left: 12px;
+        max-width: none;
+    }
+    
+    /* Dashboard */
+    .dashboard-content {
+        padding: var(--space-lg) var(--space-md);
+    }
+    
+    .dashboard-card {
+        padding: var(--space-lg);
+    }
+    
+    /* Proyectos layout */
+    .projects-layout {
+        flex-direction: column;
+        height: auto;
+    }
+
+    .projects-sidebar {
+        width: 100% !important;
+        min-width: 100% !important;
+        border-right: none;
+        border-bottom: 1px solid var(--border);
+    }
+
+    .project-detail-panel {
+        padding: var(--space-md);
+    }
+    
+    .project-detail-panel::before {
+        left: 0 !important;
+    }
+    
+    /* Field row en columna */
+    .field-row {
+        grid-template-columns: 1fr;
+    }
+    
+    /* Gantt container */
+    .gantt-container {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+    
+    /* Filtro dashboard */
+    .dashboard-filter {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .filter-select {
+        max-width: none;
+    }
+}
+
+/* Para pantallas muy pequeñas (menos de 480px) */
+@media (max-width: 480px) {
+    /* Meta compact en columna */
+    .detail-meta-compact {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+    }
+    
+    .meta-separator {
+        display: none;
+    }
+    
+    /* Header totalmente vertical */
+    .header-right {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .header-action {
+        width: 100%;
+        text-align: center;
+        justify-content: center;
+    }
+    
+    /* Títulos más pequeños */
+    .detail-title {
+        font-size: 16px;
+    }
+    
+    .app-header h1 {
+        font-size: 14px;
+    }
+    
+    /* Padding general reducido */
+    .modal-body,
+    .modal-header,
+    .modal-footer {
+        padding-left: var(--space-md);
+        padding-right: var(--space-md);
+    }
+    
+    /* KPI más compacto */
+    .kpi-value {
+        font-size: 28px;
+    }
+    
+    /* Botones de modal en columna */
+    .modal-footer {
+        flex-direction: column;
+    }
+    
+    .modal-footer .btn {
+        width: 100%;
+        justify-content: center;
+    }
+}
+
+/* ======================================= */
+/* MEJORAS TÁCTILES ADICIONALES            */
+/* ======================================= */
+
+/* Aumentar área táctil de checkboxes */
+@media (max-width: 768px) {
+    .activity-checkbox,
+    #selectAllActivities {
+        width: 20px;
+        height: 20px;
+    }
+    
+    /* Mejorar visibilidad del drag handle */
+    .drag-handle {
+        opacity: 0.5;
+    }
+    
+    tr:hover .drag-handle,
+    tr:active .drag-handle {
+        opacity: 1;
+    }
+    
+    /* Toggle más grande */
+    .toggle-track {
+        width: 50px;
+        height: 28px;
+    }
+    
+    .toggle-track::after {
+        width: 22px;
+        height: 22px;
+    }
+    
+    .toggle input:checked + .toggle-track::after {
+        transform: translateX(22px);
+    }
 }
